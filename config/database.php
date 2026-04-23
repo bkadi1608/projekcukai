@@ -3,6 +3,31 @@
 use Illuminate\Support\Str;
 use Pdo\Mysql;
 
+$firstEnv = static function (array $keys, mixed $default = null): mixed {
+    foreach ($keys as $key) {
+        $value = env($key);
+
+        if ($value !== null && $value !== '') {
+            return $value;
+        }
+    }
+
+    return $default;
+};
+
+$hasExternalDatabase = (bool) (
+    $firstEnv(['MYSQL_URL', 'MYSQLHOST', 'MYSQLDATABASE', 'DB_URL', 'DATABASE_URL'])
+    || ($firstEnv(['DB_HOST']) && ! in_array($firstEnv(['DB_HOST']), ['127.0.0.1', 'localhost'], true))
+    || ($firstEnv(['DB_DATABASE']) && $firstEnv(['DB_DATABASE']) !== 'laravel')
+);
+
+$configuredDefault = env('DB_CONNECTION');
+$defaultConnection = match (true) {
+    $configuredDefault && $configuredDefault !== 'mysql' => $configuredDefault,
+    $hasExternalDatabase => 'mysql',
+    default => 'sqlite',
+};
+
 return [
 
     /*
@@ -17,7 +42,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'mysql'),
+    'default' => $defaultConnection,
 
     /*
     |--------------------------------------------------------------------------
@@ -46,12 +71,12 @@ return [
 
         'mysql' => [
             'driver' => 'mysql',
-            'url' => env('DB_URL', env('MYSQL_URL')),
-            'host' => env('DB_HOST', env('MYSQLHOST', '127.0.0.1')),
-            'port' => env('DB_PORT', env('MYSQLPORT', '3306')),
-            'database' => env('DB_DATABASE', env('MYSQLDATABASE', 'laravel')),
-            'username' => env('DB_USERNAME', env('MYSQLUSER', 'root')),
-            'password' => env('DB_PASSWORD', env('MYSQLPASSWORD', '')),
+            'url' => $firstEnv(['MYSQL_URL', 'DB_URL', 'DATABASE_URL']),
+            'host' => $firstEnv(['MYSQLHOST', 'DB_HOST'], '127.0.0.1'),
+            'port' => $firstEnv(['MYSQLPORT', 'DB_PORT'], '3306'),
+            'database' => $firstEnv(['MYSQLDATABASE', 'DB_DATABASE'], 'laravel'),
+            'username' => $firstEnv(['MYSQLUSER', 'DB_USERNAME'], 'root'),
+            'password' => $firstEnv(['MYSQLPASSWORD', 'DB_PASSWORD'], ''),
             'unix_socket' => env('DB_SOCKET', ''),
             'charset' => env('DB_CHARSET', 'utf8mb4'),
             'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
@@ -66,12 +91,12 @@ return [
 
         'mariadb' => [
             'driver' => 'mariadb',
-            'url' => env('DB_URL', env('MYSQL_URL')),
-            'host' => env('DB_HOST', env('MYSQLHOST', '127.0.0.1')),
-            'port' => env('DB_PORT', env('MYSQLPORT', '3306')),
-            'database' => env('DB_DATABASE', env('MYSQLDATABASE', 'laravel')),
-            'username' => env('DB_USERNAME', env('MYSQLUSER', 'root')),
-            'password' => env('DB_PASSWORD', env('MYSQLPASSWORD', '')),
+            'url' => $firstEnv(['MYSQL_URL', 'DB_URL', 'DATABASE_URL']),
+            'host' => $firstEnv(['MYSQLHOST', 'DB_HOST'], '127.0.0.1'),
+            'port' => $firstEnv(['MYSQLPORT', 'DB_PORT'], '3306'),
+            'database' => $firstEnv(['MYSQLDATABASE', 'DB_DATABASE'], 'laravel'),
+            'username' => $firstEnv(['MYSQLUSER', 'DB_USERNAME'], 'root'),
+            'password' => $firstEnv(['MYSQLPASSWORD', 'DB_PASSWORD'], ''),
             'unix_socket' => env('DB_SOCKET', ''),
             'charset' => env('DB_CHARSET', 'utf8mb4'),
             'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),

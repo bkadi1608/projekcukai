@@ -2,6 +2,21 @@
 
 use Illuminate\Support\Str;
 
+$hasExternalDatabase = (bool) (
+    env('MYSQL_URL')
+    || env('MYSQLHOST')
+    || env('MYSQLDATABASE')
+    || env('DB_URL')
+    || env('DATABASE_URL')
+    || (env('DB_HOST') && ! in_array(env('DB_HOST'), ['127.0.0.1', 'localhost'], true))
+    || (env('DB_DATABASE') && env('DB_DATABASE') !== 'laravel')
+);
+
+$sessionDriver = env('SESSION_DRIVER');
+$defaultSessionDriver = $sessionDriver === 'database' && ! $hasExternalDatabase
+    ? 'file'
+    : ($sessionDriver ?: ($hasExternalDatabase ? 'database' : 'file'));
+
 return [
 
     /*
@@ -18,7 +33,7 @@ return [
     |
     */
 
-    'driver' => env('SESSION_DRIVER', 'database'),
+    'driver' => $defaultSessionDriver,
 
     /*
     |--------------------------------------------------------------------------

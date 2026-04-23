@@ -1,5 +1,22 @@
 <?php
 
+$hasExternalDatabase = (bool) (
+    env('MYSQL_URL')
+    || env('MYSQLHOST')
+    || env('MYSQLDATABASE')
+    || env('DB_URL')
+    || env('DATABASE_URL')
+    || (env('DB_HOST') && ! in_array(env('DB_HOST'), ['127.0.0.1', 'localhost'], true))
+    || (env('DB_DATABASE') && env('DB_DATABASE') !== 'laravel')
+);
+
+$queueConnection = env('QUEUE_CONNECTION');
+$defaultQueueConnection = $queueConnection === 'database' && ! $hasExternalDatabase
+    ? 'sync'
+    : ($queueConnection ?: ($hasExternalDatabase ? 'database' : 'sync'));
+
+$queueDatabase = $hasExternalDatabase ? 'mysql' : 'sqlite';
+
 return [
 
     /*
@@ -13,7 +30,7 @@ return [
     |
     */
 
-    'default' => env('QUEUE_CONNECTION', 'database'),
+    'default' => $defaultQueueConnection,
 
     /*
     |--------------------------------------------------------------------------
@@ -103,7 +120,7 @@ return [
     */
 
     'batching' => [
-        'database' => env('DB_CONNECTION', 'mysql'),
+        'database' => env('DB_CONNECTION', $queueDatabase),
         'table' => 'job_batches',
     ],
 
@@ -122,7 +139,7 @@ return [
 
     'failed' => [
         'driver' => env('QUEUE_FAILED_DRIVER', 'database-uuids'),
-        'database' => env('DB_CONNECTION', 'mysql'),
+        'database' => env('DB_CONNECTION', $queueDatabase),
         'table' => 'failed_jobs',
     ],
 
